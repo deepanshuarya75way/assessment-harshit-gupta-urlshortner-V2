@@ -177,7 +177,7 @@ const redirectToOriginalUrl = async (req, res, next) => {
         }
         if(url.isProtected){
             return res.redirect(
-                `${process.env.FRONTED_URL}/unlock/${shortCode}`
+                `${process.env.FRONTEND_URL}/unlock/${shortCode}`
             );
         }
 
@@ -327,7 +327,7 @@ const verifyPasscode = async (req,res) =>{
     try{
         const { shortCode }=req.params;
         const { passcode } = req.body;
-        const url = await Url.findOne({ shortCode}).select("passcodeHash");
+        const url = await Url.findOne({ shortCode}).select("+passcodeHash");
         if(!url || !url.isProtected){
             return res.status(404).json({
                 success: false,
@@ -341,7 +341,7 @@ const verifyPasscode = async (req,res) =>{
                 message: "Incorrrect passcode, Try again",
             });
         }
-        urlclicks++;
+        url.clicks++;
         await url.save();
         return res.status(200).json({
             success: true,
@@ -359,7 +359,7 @@ const verifyPasscode = async (req,res) =>{
 };
 const updatedPasscode= async (req,res)=> {
     try{
-        const {passcode }=req.body;
+        const { passcode }=req.body;
         const url= await Url.findOne({_id: req.params.id, user: req.user.id});
         if(!url){
             return res.status(404).json({
@@ -374,14 +374,14 @@ const updatedPasscode= async (req,res)=> {
             });
         }
         url.passcodeHash=passcode ? await bcrypt.hash(passcode,10): null;
-        url.isProteccted= !!url.passcodeHash;
+        url.isProtected= !!url.passcodeHash;
         await url.save();
         await  redisClient.del(url.shortCode);
         return res.status(200).json({
             success: true,
-            message:passcode ? "Passcode updated " : "Passcode removed",
+            message:passcode ? "Passcode updated" : "Passcode removed",
             data :{
-                isProtected: url.isProteccted
+                isProtected: url.isProtected
             },
         });
     }catch(error){

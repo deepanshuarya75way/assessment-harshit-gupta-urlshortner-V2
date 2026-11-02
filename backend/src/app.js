@@ -55,7 +55,7 @@ app.use("/api/url", urlRoutes);
 // Public Redirect
 app.get("/:shortCode", redirectToOriginalUrl);
 
-app.post("/:shotCode/verify",loginLimiter,verifyPasscode);
+app.post("/:shortCode/verify",loginLimiter,verifyPasscode);
 
 // Health Check
 app.get("/", (req, res) => {

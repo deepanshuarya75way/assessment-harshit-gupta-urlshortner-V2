@@ -35,7 +35,7 @@ const urlSchema = new mongoose.Schema(
             default: null,
             select: false,
         },
-        isProteccted: {
+        isProtected: {
             type: Boolean,
             default: false,
         },

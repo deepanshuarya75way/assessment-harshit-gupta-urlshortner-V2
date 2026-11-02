@@ -26,12 +26,22 @@ export const AuthProvider = ({ children }) => {
 
         setUser(null);
     };
+    
+    const register= async (name ,email,password)=> {
+        const response=await api.post("/auth/register",{
+            name,
+            email,
+            password
+        });
+        return response.data;
+    };
 
     const value = {
         user,
         setUser,
         login,
-        logout
+        logout,
+        register
     };
 
     return (

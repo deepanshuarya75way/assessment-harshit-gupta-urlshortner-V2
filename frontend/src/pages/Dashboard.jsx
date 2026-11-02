@@ -16,7 +16,7 @@ function Dashboard() {
     const [originalUrl, setOriginalUrl] = useState("");
     const [customCode, setCustomCode] = useState("");
     const [expirationDays, setExpirationDays] = useState("");
-    const [passcode, setPasscode]=usestate("");
+    const [passcode, setPasscode]=useState("");
 
 
     const [loading, setLoading] = useState(false);
@@ -307,8 +307,27 @@ function Dashboard() {
 
     // setpasscode//
     
-    const 
+    const setPasscodeFor= async (id)=>{
+        const value=window.prompt("Enter passcode (4-50 characters)");
+        if(!value)return ;
+        try{
+            await api.patch(`/url/${id}/passcode`,{passcode :value});
+            await fetchUrls();
 
+        }catch(error){
+            alert(error.response?.data?.message || "Failed to remove passcode");
+        }
+    };
+    //removepasscode 
+
+    const removePasscodeFor= async (id)=>{
+        try{
+            await api.patch(`/url/${id}/passcode`,{passcode:null});
+            await fetchUrls();
+        }catch(error){
+            alert(error.response?.data?.message || " Failed to remove");
+        }
+    };
 
     // =========================
     // UI
@@ -483,12 +502,12 @@ function Dashboard() {
                         </div>
                         <div>
                             <label className="block font-medium mb-2">
-                                Passcode <span className="text-gray-500 text-sm ml-2">(optional)</span>
+                                Passcode <span className="text-gray-500 text-sm ml-2"></span>
                             </label>
                             <input type="password"
                             placeholder="4-50 characters"
                             value={passcode}
-                            onChange={(e)=> setPasscode(e.tager.value)}
+                            onChange={(e)=> setPasscode(e.target.value)}
                             className="w-full border-gray-300 p-3 rounded-lg"></input>
                         </div>
 
@@ -729,6 +748,13 @@ function Dashboard() {
                                                         >
                                                             Delete
                                                         </button>
+                                                    {/* Passcode */}
+                                                        <button
+                         onClick={()=> setPasscodeFor(url._id)} className="text-blue-600 hover:underline">
+                            {url.isProtected ? "Change passcode" : "Set passcode"}
+                         </button>
+                         {url.isProtected &&  (<button onClick={()=> removePasscodeFor(url._id)} className="text-red-600 hover:underline"> Remove Passcode</button>
+                         )}
 
                                                     </div>
 
