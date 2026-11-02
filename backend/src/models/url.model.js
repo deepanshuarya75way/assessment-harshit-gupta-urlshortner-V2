@@ -29,7 +29,16 @@ const urlSchema = new mongoose.Schema(
         isCustom: {
             type: Boolean,
             default: false
-        }
+        },
+        passcodeHash:{
+            type: String,
+            default: null,
+            select: false,
+        },
+        isProteccted: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true

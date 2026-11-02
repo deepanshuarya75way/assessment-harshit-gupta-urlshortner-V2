@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
+import Unlock from "./pages/Unlock";
 
 function App() {
     return (
@@ -44,6 +45,11 @@ function App() {
                 path="*"
                 element={<Navigate to="/login" replace />}
             />
+            <Route
+                path="/unlock/:shortCode"
+                element={<Unlock />}
+            />
+            
 
         </Routes>
     );

@@ -2,10 +2,11 @@ const { redisClient } = require("../config/redis");
 const Url = require("../models/url.model");
 const { nanoid } = require("nanoid");
 const generateQRCode = require("../utils/qrCode");
+const bcrypt= require("bcryptjs");
 
 const createShortUrl = async (req, res) => {
     try {
-        const { originalUrl, customCode } = req.body;
+        const { originalUrl, customCode, passcode } = req.body;
 
         // 1. Validate original URL
         if (!originalUrl) {
@@ -23,11 +24,21 @@ const createShortUrl = async (req, res) => {
                 message: "Invalid URL"
             });
         }
-
+        let passcodeHash=null;
+        if(passcode){
+            if(typeof passcode !=="string" || passcode.length< 4 || passcode.length > 50){
+                return res.status(400).json({
+                    success:false,
+                    message:"Passcode must be between 4 and 50 chars",
+                });
+            }
+            passcodeHash=await bcrypt.hash(passcode,10);
+        }
         // 2. Check whether this URL already exists for this user
-        const existingUrl = await Url.findOne({
+        const existingUrl = passcode ? null : await Url.findOne({
             originalUrl,
-            user: req.user.id
+            user: req.user.id,
+            passcodeHash:null,
         });
 
         if (existingUrl) {
@@ -95,7 +106,9 @@ const createShortUrl = async (req, res) => {
         const url = await Url.create({
             originalUrl,
             shortCode,
-            user: req.user.id
+            user: req.user.id,
+            passcodeHash,
+            isProtected: !!passcodeHash,
         });
 
         // 6. Create short URL
@@ -114,7 +127,8 @@ const createShortUrl = async (req, res) => {
                 originalUrl: url.originalUrl,
                 shortCode: url.shortCode,
                 shortUrl,
-                qrCode
+                qrCode,
+                isProtected: url.isProtected,
             }
         });
 
@@ -146,7 +160,6 @@ const redirectToOriginalUrl = async (req, res, next) => {
             );
 
             return res.redirect(cachedUrl);
-
         }
 
         console.log("❌ Cache Miss");
@@ -162,6 +175,11 @@ const redirectToOriginalUrl = async (req, res, next) => {
             });
 
         }
+        if(url.isProtected){
+            return res.redirect(
+                `${process.env.FRONTED_URL}/unlock/${shortCode}`
+            );
+        }
 
         // 3. Store in Redis
         await redisClient.set(
@@ -174,7 +192,6 @@ const redirectToOriginalUrl = async (req, res, next) => {
 
         // 4. Increase Click Count
         url.clicks++;
-
         await url.save();
 
         // 5. Redirect
@@ -192,7 +209,7 @@ const getAllUrls = async (req, res) => {
         const urls = await Url.find({
             user: req.user.id
         })
-            .select("originalUrl shortCode clicks createdAt updatedAt")
+            .select("originalUrl shortCode clicks isProtected createdAt updatedAt")
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -306,11 +323,82 @@ const generateUrlQRCode = async (req, res) => {
         });
     }
 };
+const verifyPasscode = async (req,res) =>{
+    try{
+        const { shortCode }=req.params;
+        const { passcode } = req.body;
+        const url = await Url.findOne({ shortCode}).select("passcodeHash");
+        if(!url || !url.isProtected){
+            return res.status(404).json({
+                success: false,
+                message: "Link not found",
+            });
+        }
+        const ok =await bcrypt.compare(String(passcode || ""), url.passcodeHash);
+        if(!ok){
+            return res.status(401).json({
+                success: false,
+                message: "Incorrrect passcode, Try again",
+            });
+        }
+        urlclicks++;
+        await url.save();
+        return res.status(200).json({
+            success: true,
+            data:{
+                originalUrl: url.originalUrl
+            },
+        });
+    }catch(error){
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+const updatedPasscode= async (req,res)=> {
+    try{
+        const {passcode }=req.body;
+        const url= await Url.findOne({_id: req.params.id, user: req.user.id});
+        if(!url){
+            return res.status(404).json({
+                success: false,
+                message: "URL not found",
+            });
+        }
+        if(passcode && (typeof passcode !== "string" || passcode.length< 4 || passcode.length> 50 )){
+            return res.status(400).json({
+                success: false,
+                message:" Passcode must be between 4 and 50 chars",
+            });
+        }
+        url.passcodeHash=passcode ? await bcrypt.hash(passcode,10): null;
+        url.isProteccted= !!url.passcodeHash;
+        await url.save();
+        await  redisClient.del(url.shortCode);
+        return res.status(200).json({
+            success: true,
+            message:passcode ? "Passcode updated " : "Passcode removed",
+            data :{
+                isProtected: url.isProteccted
+            },
+        });
+    }catch(error){
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Intenal Server Error",
+        });
+    }
+};
 module.exports = {
     createShortUrl,
     redirectToOriginalUrl,
     getAllUrls,
     deleteUrl,
     getUrlAnalytics,
-    generateUrlQRCode
+    generateUrlQRCode,
+    verifyPasscode,
+    updatedPasscode,
 };

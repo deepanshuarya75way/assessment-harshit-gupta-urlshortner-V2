@@ -10,9 +10,11 @@ const urlRoutes = require("./routes/url.routes");
 const authRoutes = require("./routes/auth.routes");
 
 const {
-    redirectToOriginalUrl
+    redirectToOriginalUrl,
+    verifyPasscode
 } = require("./controllers/url.controller");
-
+const { loginLimiter }= require("./middlewares/rateLimiter");
+const { verify } = require("jsonwebtoken");
 const app = express();
 
 // Security
@@ -52,6 +54,8 @@ app.use("/api/url", urlRoutes);
 
 // Public Redirect
 app.get("/:shortCode", redirectToOriginalUrl);
+
+app.post("/:shotCode/verify",loginLimiter,verifyPasscode);
 
 // Health Check
 app.get("/", (req, res) => {

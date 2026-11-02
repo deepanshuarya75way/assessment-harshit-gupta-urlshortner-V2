@@ -16,6 +16,8 @@ function Dashboard() {
     const [originalUrl, setOriginalUrl] = useState("");
     const [customCode, setCustomCode] = useState("");
     const [expirationDays, setExpirationDays] = useState("");
+    const [passcode, setPasscode]=usestate("");
+
 
     const [loading, setLoading] = useState(false);
 
@@ -89,7 +91,8 @@ function Dashboard() {
 
                 // Expiration
                 expirationDays:
-                    expirationDays || undefined
+                    expirationDays || undefined,
+                    passcode: passcode|| undefined,
             });
 
             console.log(
@@ -302,6 +305,11 @@ function Dashboard() {
         return new Date(date).toLocaleString();
     };
 
+    // setpasscode//
+    
+    const 
+
+
     // =========================
     // UI
     // =========================
@@ -472,6 +480,16 @@ function Dashboard() {
 
                             </select>
 
+                        </div>
+                        <div>
+                            <label className="block font-medium mb-2">
+                                Passcode <span className="text-gray-500 text-sm ml-2">(optional)</span>
+                            </label>
+                            <input type="password"
+                            placeholder="4-50 characters"
+                            value={passcode}
+                            onChange={(e)=> setPasscode(e.tager.value)}
+                            className="w-full border-gray-300 p-3 rounded-lg"></input>
                         </div>
 
 
