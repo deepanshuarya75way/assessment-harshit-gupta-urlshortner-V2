@@ -14,7 +14,7 @@ const authMiddleware = (req, res, next) => {
             token,
             process.env.JWT_SECRET
         );
-
+        
         req.user = {
             id: decoded.id
         };
